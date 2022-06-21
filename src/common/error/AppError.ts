@@ -1,0 +1,66 @@
+import { AppErrorTypeEnum } from "./AppErrorTypeEnum";
+import { IErrorMessage } from "../filters/IErrorMessage"
+import { HttpStatus } from "@nestjs/common";
+import { appendFile } from "fs";
+
+export class AppError extends Error {
+    errorCode: AppErrorTypeEnum;
+    httpStatus: number;
+    errorMessage: string;
+    userMessage: string;
+    constructor(errorCode: AppErrorTypeEnum) {
+        super();
+        const errorMessageConfig: IErrorMessage = this.getError(errorCode)
+        if (!errorMessageConfig) {
+            throw new Error(`enable to find message code error`)
+        }
+        Error.captureStackTrace(this, this.constructor)
+        this.name = this.constructor.name
+        this.httpStatus = errorMessageConfig.httpStatus
+        this.errorCode = errorCode
+        this.errorMessage = errorMessageConfig.errorMessage;
+        this.userMessage = errorMessageConfig.userMessage;
+    }
+    private getError(errorCode: AppErrorTypeEnum): IErrorMessage {
+        let res: IErrorMessage;
+        switch (errorCode) {
+            case AppErrorTypeEnum.USER_NOT_FOUND:
+                res = {
+                    type: AppErrorTypeEnum.USER_NOT_FOUND,
+                    httpStatus: HttpStatus.NOT_FOUND,
+                    errorMessage: `User is not found`,
+                    userMessage: `Unable to find the user with the provided information.`,
+                }
+
+                break;
+            case AppErrorTypeEnum.USER_EXISTS:
+                res={
+                    type:AppErrorTypeEnum.USER_EXISTS,
+                    httpStatus:HttpStatus.UNPROCESSABLE_ENTITY,
+                    errorMessage:`User is exists`,
+                    userMessage:`Username is exists`,
+                }
+
+                break;
+            case  AppErrorTypeEnum.NOT_IN_SESSION:
+                res={
+                    type:AppErrorTypeEnum.NOT_IN_SESSION,
+                    httpStatus:HttpStatus.UNAUTHORIZED,
+                    errorMessage:`no session`,
+                    userMessage:`session expried`,
+                }
+
+                break;
+            case AppErrorTypeEnum.NO_USERS_IN_DB:
+                res={
+                    type:AppErrorTypeEnum.NO_USERS_IN_DB,
+                    httpStatus:HttpStatus.NOT_FOUND,
+                    errorMessage:`No Users exits in the database`,
+                    userMessage:`No User,create some`
+                }
+                break;
+        }
+
+        return res
+    }
+}
